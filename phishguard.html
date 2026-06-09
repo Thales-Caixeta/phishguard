@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PhishGuard IA – Detector de Golpes Digitais</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f5f3;
+    --surface: #ffffff;
+    --surface2: #f1f0ed;
+    --border: rgba(0,0,0,0.1);
+    --border2: rgba(0,0,0,0.18);
+    --text: #1a1a18;
+    --text2: #5f5e5a;
+    --text3: #888780;
+    --blue-bg: #E6F1FB;
+    --blue-mid: #185FA5;
+    --blue-dark: #042C53;
+    --green-bg: #EAF3DE;
+    --green-mid: #3B6D11;
+    --amber-bg: #FAEEDA;
+    --amber-mid: #854F0B;
+    --red-bg: #FCEBEB;
+    --red-mid: #A32D2D;
+    --red-light: #F7C1C1;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1a;
+      --surface: #2c2c2a;
+      --surface2: #242422;
+      --border: rgba(255,255,255,0.1);
+      --border2: rgba(255,255,255,0.18);
+      --text: #f1f0ed;
+      --text2: #b4b2a9;
+      --text3: #888780;
+      --blue-bg: #042C53;
+      --blue-mid: #85B7EB;
+      --blue-dark: #E6F1FB;
+      --green-bg: #173404;
+      --green-mid: #97C459;
+      --amber-bg: #412402;
+      --amber-mid: #EF9F27;
+      --red-bg: #501313;
+      --red-mid: #F09595;
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem 1rem;
+  }
+
+  .container { max-width: 680px; margin: 0 auto; }
+
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 2rem;
+  }
+
+  .logo {
+    width: 48px; height: 48px;
+    border-radius: var(--radius-lg);
+    background: var(--blue-dark);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .logo i { font-size: 26px; color: #B5D4F4; }
+
+  .header-text h1 { font-size: 22px; font-weight: 600; color: var(--text); }
+  .header-text p { font-size: 13px; color: var(--text2); margin-top: 2px; }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: var(--green-bg);
+    color: var(--green-mid);
+    margin-top: 4px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 130px;
+    resize: vertical;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.65;
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    border: 0.5px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  textarea:focus {
+    border-color: #378ADD;
+    box-shadow: 0 0 0 3px rgba(55,138,221,0.15);
+  }
+
+  textarea::placeholder { color: var(--text3); }
+
+  .examples-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin: 14px 0 8px;
+  }
+
+  .examples {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+
+  .ex-btn {
+    font-size: 12px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 0.5px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text2);
+    cursor: pointer;
+    transition: background 0.12s;
+    font-family: inherit;
+  }
+
+  .ex-btn:hover { background: var(--bg); color: var(--text); }
+
+  .analyze-btn {
+    width: 100%;
+    margin-top: 14px;
+    padding: 13px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    background: var(--blue-mid);
+    color: #E6F1FB;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background 0.15s, transform 0.1s;
+  }
+
+  .analyze-btn:hover { background: #0C447C; }
+  .analyze-btn:active { transform: scale(0.99); }
+  .analyze-btn:disabled {
+    background: var(--surface2);
+    color: var(--text3);
+    border: 0.5px solid var(--border);
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .spinner {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 2.5rem;
+    color: var(--text2);
+    font-size: 14px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spin { animation: spin 0.9s linear infinite; display: inline-block; }
+
+  .result { display: none; }
+
+  .risk-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius-md);
+    margin-bottom: 1.25rem;
+  }
+
+  .risk-icon { font-size: 36px; line-height: 1; }
+
+  .risk-level { font-size: 21px; font-weight: 600; }
+  .risk-summary { font-size: 13px; margin-top: 3px; }
+
+  .risk-low { background: var(--green-bg); }
+  .risk-low .risk-level { color: var(--green-mid); }
+  .risk-low .risk-summary { color: var(--green-mid); opacity: 0.8; }
+
+  .risk-medium { background: var(--amber-bg); }
+  .risk-medium .risk-level { color: var(--amber-mid); }
+  .risk-medium .risk-summary { color: var(--amber-mid); opacity: 0.8; }
+
+  .risk-high { background: var(--red-bg); }
+  .risk-high .risk-level { color: var(--red-mid); }
+  .risk-high .risk-summary { color: var(--red-mid); opacity: 0.8; }
+
+  .score-bar-wrap { margin-top: 12px; }
+  .score-bar-track {
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .score-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.6s ease;
+  }
+  .score-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 5px;
+  }
+
+  .section-title {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 10px;
+  }
+
+  .tags { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 1.25rem; }
+
+  .tag {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 11px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .tag-danger { background: var(--red-bg); color: var(--red-mid); }
+  .tag-warning { background: var(--amber-bg); color: var(--amber-mid); }
+  .tag-info { background: var(--blue-bg); color: var(--blue-mid); }
+  .tag-safe { background: var(--green-bg); color: var(--green-mid); }
+
+  .explanation {
+    font-size: 14px;
+    line-height: 1.75;
+    color: var(--text);
+    margin-bottom: 0;
+  }
+
+  .tips { list-style: none; }
+
+  .tips li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 9px 0;
+    border-bottom: 0.5px solid var(--border);
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.55;
+  }
+
+  .tips li:last-child { border-bottom: none; }
+
+  .tips li i {
+    font-size: 16px;
+    color: #1D9E75;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .reset-btn {
+    width: 100%;
+    padding: 11px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--text2);
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius-md);
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 4px;
+    transition: background 0.12s;
+  }
+
+  .reset-btn:hover { background: var(--surface2); }
+
+  footer {
+    text-align: center;
+    margin-top: 2.5rem;
+    font-size: 12px;
+    color: var(--text3);
+  }
+
+  footer span { color: var(--text2); }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="logo"><i class="ti ti-shield-check"></i></div>
+    <div class="header-text">
+      <h1>PhishGuard IA</h1>
+      <p>Sistema inteligente de detecção de golpes digitais</p>
+      <span class="badge"><i class="ti ti-cpu" style="font-size:13px;"></i> Análise por IA heurística</span>
+    </div>
+  </div>
+
+  <div id="input-section">
+    <div class="card">
+      <span class="label">Mensagem ou link suspeito</span>
+      <textarea id="msg-input" placeholder="Cole aqui a mensagem, e-mail, SMS ou link que deseja verificar..."></textarea>
+
+      <div class="examples-label">Exemplos para testar</div>
+      <div class="examples">
+        <button class="ex-btn" onclick="setEx(0)">🔗 Link phishing</button>
+        <button class="ex-btn" onclick="setEx(1)">📱 SMS fraude</button>
+        <button class="ex-btn" onclick="setEx(2)">📧 E-mail falso</button>
+        <button class="ex-btn" onclick="setEx(3)">💬 PIX falso</button>
+        <button class="ex-btn" onclick="setEx(4)">✅ Mensagem legítima</button>
+      </div>
+
+      <button class="analyze-btn" id="analyze-btn" onclick="analyze()">
+        <i class="ti ti-shield-search"></i> Analisar agora
+      </button>
+    </div>
+  </div>
+
+  <div class="spinner" id="spinner">
+    <i class="ti ti-loader spin" style="font-size:22px;"></i>
+    Analisando com IA...
+  </div>
+
+  <div class="result" id="result-section">
+    <div class="card">
+      <div id="risk-bar" class="risk-bar">
+        <div id="risk-icon" class="risk-icon"></div>
+        <div style="flex:1;">
+          <div id="risk-level" class="risk-level"></div>
+          <div id="risk-summary" class="risk-summary"></div>
+          <div class="score-bar-wrap">
+            <div class="score-bar-track">
+              <div id="score-fill" class="score-bar-fill"></div>
+            </div>
+            <div class="score-label">
+              <span>Baixo risco</span>
+              <span id="score-pct"></span>
+              <span>Alto risco</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title">Elementos detectados</div>
+      <div class="tags" id="tags-container"></div>
+
+      <div class="section-title">Análise detalhada</div>
+      <p class="explanation" id="explanation"></p>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Recomendações de segurança</div>
+      <ul class="tips" id="tips-list"></ul>
+    </div>
+
+    <button class="reset-btn" onclick="reset()">
+      <i class="ti ti-refresh"></i> Analisar outra mensagem
+    </button>
+  </div>
+
+  <footer>
+    PhishGuard IA &nbsp;·&nbsp; <span>Projeto Acadêmico</span> &nbsp;·&nbsp; Desenvolvido com IA Generativa
+  </footer>
+
+</div>
+
+<script>
+const EXAMPLES = [
+  "URGENTE! Sua conta bancária foi suspensa por atividade suspeita. Clique agora para regularizar: http://bradesco-seguro.xyz/verificar?token=abc123. Caso não acesse em 24h, sua conta será bloqueada definitivamente e todos os seus dados serão perdidos.",
+  "Parabéns! Você foi selecionado para receber R$1.500,00 do programa social do governo federal. Para sacar, confirme seu CPF e chave PIX pelo link: gov-beneficio.net/resgate-agora. Válido apenas HOJE!",
+  "Prezado cliente, identificamos uma compra não reconhecida de R$2.847,00 no seu cartão. Para CANCELAR AGORA acesse: itau-cancelar.com/urgente e confirme sua senha e código do cartão.",
+  "Olá! Recebi seu PIX de R$500 mas caiu na conta errada. Me manda seu QR Code ou chave PIX de volta que eu devolvo agora mesmo, precisa ser rápido pois meu banco vai estornar.",
+  "Oi, tudo bem? Confirmo nossa reunião de amanhã às 15h na sala de conferências. Por favor, traga o relatório do último trimestre que discutimos semana passada. Qualquer dúvida é só falar. Abraços, Carlos"
+];
+
+function setEx(i) {
+  document.getElementById('msg-input').value = EXAMPLES[i];
+}
+
+const URGENCY_WORDS = [
+  'urgente','urgência','agora','imediatamente','hoje','rápido','bloqueada','suspensa',
+  'cancelada','encerrada','prazo','últimas horas','últimas 24','último dia','expira',
+  'bloqueio','imediato','atenção','alerta','crítico','emergência'
+];
+
+const REWARD_WORDS = [
+  'parabéns','selecionado','ganhou','prêmio','benefício','resgate','saque','receber',
+  'grátis','gratuito','bônus','cashback','reembolso','aprovado','contemplado'
+];
+
+const CREDENTIAL_WORDS = [
+  'senha','cpf','rg','cartão','token','código','confirme','confirmar','validar',
+  'atualizar cadastro','dados pessoais','conta bancária','chave pix','número do cartão'
+];
+
+const SUSPICIOUS_DOMAINS = [
+  /https?:\/\/[^\s]*\.(xyz|tk|ml|ga|cf|gq|top|click|link|site|online|shop)[^\s]*/gi,
+  /https?:\/\/[^\s]*(seguro|banco|bradesco|itau|santander|caixa|bb|nubank|inter|gov|beneficio|cancelar|verificar|regularizar|resgate)[^\s]*\.(com|net|org|br)[^\s]*/gi,
+  /https?:\/\/(?!\w+\.(gov\.br|com\.br|org\.br|edu\.br))[^\s]+/gi,
+  /bit\.ly|tinyurl|t\.co|ow\.ly|goo\.gl|rb\.gy/gi
+];
+
+const PIX_SCAM = [
+  'pix','qr code','chave pix','transferência','conta errada','caiu errado','devolver','estorno'
+];
+
+function countMatches(text, words) {
+  const t = text.toLowerCase();
+  return words.filter(w => t.includes(w.toLowerCase())).length;
+}
+
+function findSuspiciousUrls(text) {
+  const urls = text.match(/https?:\/\/[^\s]+/gi) || [];
+  const suspicious = [];
+  urls.forEach(url => {
+    if (/\.(xyz|tk|ml|ga|cf|gq|top|click)$/i.test(url)) suspicious.push({ label: 'Domínio suspeito: ' + url.substring(0,40), type: 'danger' });
+    else if (/(seguro|cancelar|verificar|regularizar|resgate|beneficio)/i.test(url)) suspicious.push({ label: 'URL com palavra-isca', type: 'danger' });
+    else if (/(bit\.ly|tinyurl|ow\.ly)/i.test(url)) suspicious.push({ label: 'Link encurtado suspeito', type: 'warning' });
+  });
+  return { urls, suspicious };
+}
+
+function analyze() {
+  const msg = document.getElementById('msg-input').value.trim();
+  if (!msg) return;
+
+  document.getElementById('analyze-btn').disabled = true;
+  document.getElementById('result-section').style.display = 'none';
+  document.getElementById('spinner').style.display = 'flex';
+
+  setTimeout(() => {
+    const result = runAnalysis(msg);
+    renderResult(result);
+    document.getElementById('spinner').style.display = 'none';
+    document.getElementById('result-section').style.display = 'block';
+  }, 1400);
+}
+
+function runAnalysis(text) {
+  const t = text.toLowerCase();
+  const detected = [];
+  let score = 0;
+
+  const urgencyCount = countMatches(text, URGENCY_WORDS);
+  if (urgencyCount >= 2) { score += 30; detected.push({ label: 'Linguagem de urgência extrema', type: 'danger' }); }
+  else if (urgencyCount === 1) { score += 12; detected.push({ label: 'Tom de urgência', type: 'warning' }); }
+
+  const rewardCount = countMatches(text, REWARD_WORDS);
+  if (rewardCount >= 2) { score += 25; detected.push({ label: 'Promessa de prêmio/benefício', type: 'danger' }); }
+  else if (rewardCount === 1) { score += 10; detected.push({ label: 'Oferta suspeita', type: 'warning' }); }
+
+  const credCount = countMatches(text, CREDENTIAL_WORDS);
+  if (credCount >= 2) { score += 35; detected.push({ label: 'Solicitação de dados sensíveis', type: 'danger' }); }
+  else if (credCount === 1) { score += 15; detected.push({ label: 'Pedido de credencial', type: 'warning' }); }
+
+  const { urls, suspicious } = findSuspiciousUrls(text);
+  suspicious.forEach(s => { score += 30; detected.push(s); });
+  if (urls.length > 0 && suspicious.length === 0) {
+    score += 5;
+    detected.push({ label: 'Contém link externo', type: 'info' });
+  }
+
+  const pixMatches = countMatches(text, PIX_SCAM);
+  if (pixMatches >= 3) { score += 25; detected.push({ label: 'Padrão de golpe PIX', type: 'danger' }); }
+  else if (pixMatches >= 1) { score += 8; detected.push({ label: 'Menção a PIX/transferência', type: 'info' }); }
+
+  if (/r\$\s*[\d\.]+/i.test(text)) {
+    score += 8;
+    detected.push({ label: 'Valor financeiro mencionado', type: 'warning' });
+  }
+
+  const exclamations = (text.match(/!/g) || []).length;
+  if (exclamations >= 3) { score += 10; detected.push({ label: 'Excesso de exclamações', type: 'warning' }); }
+
+  const capsWords = (text.match(/\b[A-Z]{4,}\b/g) || []).length;
+  if (capsWords >= 2) { score += 8; detected.push({ label: 'Texto em caixa alta', type: 'warning' }); }
+
+  score = Math.min(score, 100);
+
+  let riskLevel, riskSummary, explanation, tips, scoreColor;
+
+  if (score <= 20) {
+    riskLevel = 'BAIXO';
+    riskSummary = 'Nenhum padrão de golpe detectado';
+    scoreColor = '#639922';
+    explanation = 'A análise não identificou padrões típicos de golpes digitais nesta mensagem. O conteúdo parece legítimo, sem uso de linguagem manipulativa, links suspeitos ou solicitação indevida de dados pessoais. Ainda assim, mantenha sempre cautela ao clicar em links ou fornecer informações.';
+    tips = [
+      'Mesmo mensagens legítimas podem ser falsificadas — confirme o remetente por outro canal se houver dúvida.',
+      'Nunca forneça senhas ou códigos de verificação, nem mesmo para contatos conhecidos.',
+      'Ative a autenticação em dois fatores em suas contas para maior segurança.'
+    ];
+  } else if (score <= 55) {
+    riskLevel = 'MÉDIO';
+    riskSummary = 'Alguns sinais de alerta encontrados';
+    scoreColor = '#BA7517';
+    explanation = 'A mensagem apresenta alguns elementos que merecem atenção. Foram detectados padrões frequentemente utilizados em golpes digitais, como linguagem apelativa ou menção a dados financeiros. Não clique em links nem forneça informações antes de verificar a autenticidade da fonte.';
+    tips = [
+      'Verifique o remetente diretamente pelo canal oficial da empresa ou instituição antes de agir.',
+      'Não clique em links — acesse o site digitando o endereço diretamente no navegador.',
+      'Em caso de dúvida sobre cobranças ou bloqueios, ligue para o número oficial do seu banco.',
+      'Desconfie de qualquer pedido de confirmação de dados por mensagem ou e-mail.'
+    ];
+  } else {
+    riskLevel = 'ALTO';
+    riskSummary = 'Alta probabilidade de golpe digital';
+    scoreColor = '#A32D2D';
+    explanation = 'Esta mensagem apresenta múltiplos indicadores fortemente associados a golpes digitais: uso de urgência extrema, promessas de benefícios, solicitação de dados sensíveis e/ou links com domínios fraudulentos. Este é um padrão clássico de phishing ou engenharia social. Não interaja com esta mensagem.';
+    tips = [
+      'Não clique em nenhum link desta mensagem — delete-a imediatamente.',
+      'Nunca forneça senha, CPF, dados do cartão ou código de autenticação.',
+      'Se recebeu isso como e-mail, marque como spam e reporte ao seu provedor.',
+      'Se acredita que seus dados foram comprometidos, entre em contato com seu banco imediatamente.',
+      'Você pode denunciar golpes digitais na delegacia virtual do seu estado ou pelo SaferNet Brasil.'
+    ];
+  }
+
+  if (detected.length === 0) {
+    detected.push({ label: 'Nenhum padrão suspeito', type: 'safe' });
+  }
+
+  return { riskLevel, riskSummary, explanation, tips, detected, score, scoreColor };
+}
+
+function renderResult(r) {
+  const bar = document.getElementById('risk-bar');
+  bar.className = 'risk-bar';
+  const classMap = { 'BAIXO': 'risk-low', 'MÉDIO': 'risk-medium', 'ALTO': 'risk-high' };
+  const iconMap = { 'BAIXO': '🟢', 'MÉDIO': '🟡', 'ALTO': '🔴' };
+  bar.classList.add(classMap[r.riskLevel] || 'risk-medium');
+
+  document.getElementById('risk-icon').textContent = iconMap[r.riskLevel] || '🟡';
+  document.getElementById('risk-level').textContent = 'Risco ' + r.riskLevel;
+  document.getElementById('risk-summary').textContent = r.riskSummary;
+
+  const fill = document.getElementById('score-fill');
+  fill.style.width = r.score + '%';
+  fill.style.background = r.scoreColor;
+  document.getElementById('score-pct').textContent = r.score + '% de risco';
+
+  const tags = document.getElementById('tags-container');
+  tags.innerHTML = '';
+  r.detected.forEach(el => {
+    const span = document.createElement('span');
+    span.className = 'tag tag-' + (el.type || 'info');
+    const iconMap2 = { danger: 'ti-alert-triangle', warning: 'ti-alert-circle', info: 'ti-info-circle', safe: 'ti-circle-check' };
+    span.innerHTML = `<i class="ti ${iconMap2[el.type] || 'ti-info-circle'}" style="font-size:13px;"></i>${el.label}`;
+    tags.appendChild(span);
+  });
+
+  document.getElementById('explanation').textContent = r.explanation;
+
+  const tips = document.getElementById('tips-list');
+  tips.innerHTML = '';
+  r.tips.forEach(tip => {
+    const li = document.createElement('li');
+    li.innerHTML = `<i class="ti ti-circle-check"></i><span>${tip}</span>`;
+    tips.appendChild(li);
+  });
+}
+
+function reset() {
+  document.getElementById('msg-input').value = '';
+  document.getElementById('result-section').style.display = 'none';
+  document.getElementById('analyze-btn').disabled = false;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
